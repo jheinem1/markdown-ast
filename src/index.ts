@@ -243,9 +243,10 @@ function parseText(text: string, bold = "", italic = "", strikethrough = "", cod
     const textNodes = new Array<Text | Image>();
     let previousChar = "";
     for (let i = 0; i < textTable.size(); i++) {
-        const currentChar = textTable[i];
+        let currentChar = textTable[i];
         if (currentChar === "\\" && !isEscaped(text.sub(i))) {
             // ignore unescaped backslashes
+            currentChar = "";
         } else if (currentChar === "*" && previousChar === "*" && !isEscaped(text.sub(i - 2))) {
             textNodes.pop();
             bold = bold !== "**" ? "**" : "";
@@ -259,15 +260,16 @@ function parseText(text: string, bold = "", italic = "", strikethrough = "", cod
             // } else if (currentChar === "[" && !isEscaped(text.sub(i - 1))) {
             //     let text
         }
-        textNodes.push({
-            type: "text",
-            text: currentChar,
-            bold: !!bold,
-            italic: !!italic,
-            strikethrough: !!strikethrough,
-            code: !!code,
-            url,
-        });
+        if (currentChar)
+            textNodes.push({
+                type: "text",
+                text: currentChar,
+                bold: !!bold,
+                italic: !!italic,
+                strikethrough: !!strikethrough,
+                code: !!code,
+                url,
+            });
         previousChar = currentChar;
     }
     // const urlEnd = -1;
