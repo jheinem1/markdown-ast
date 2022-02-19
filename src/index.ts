@@ -183,7 +183,7 @@ function trimOrderedListItemNumber(listItemStr: string) {
         digit = tonumber(strArray[digitPos]);
         digitPos++;
     }
-    return listItemStr.sub(digitPos + 2);
+    return listItemStr.sub(digitPos + 3);
 }
 
 function parseText(text: string, bold = false, italic = false, strikethrough = false, code = false, url = "") {
