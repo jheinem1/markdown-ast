@@ -21,9 +21,7 @@ In terms of supported features, this supports the [base syntax](https://www.mark
 
 ...that are common in other implementations.
 
-Although this technically does support HTML, it's unlikely that it will render in projects that use this parser.
-
-As this is designed for use with parsing to Roblox GUI, additional syntax may be added for text styles in the future.
+This does **not** support XML right now, and if it does, it will only support Roact elements.
 
 ## Usage
 
