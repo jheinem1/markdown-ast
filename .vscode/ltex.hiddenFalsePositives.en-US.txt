@@ -1,0 +1,2 @@
+{"rule":"UPPERCASE_SENTENCE_START","sentence":"^\\Qroblox-markdown\nA simple module that converts a markdown string\\E$"}
+{"rule":"MORFOLOGIK_RULE_EN_US","sentence":"^\\QTables\nFootnotes (though IDK why you'd want them)\nStrikethrough\nTask Lists\nAutomatic URL Linking\\E$"}
