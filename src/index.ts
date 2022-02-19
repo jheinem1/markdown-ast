@@ -4,7 +4,7 @@ type MarkdownNode =
     | Break
     | Text
     | Paragraph
-    | Heading
+    | Header
     | Blockquote
     | ListItem
     | List
@@ -37,15 +37,15 @@ type Paragraph = {
     text: Array<Text | Image>;
 };
 
-type Heading = {
-    type: "heading";
+type Header = {
+    type: "header";
     level: number;
     text: Array<Text | Image>;
 };
 
 type Blockquote = {
     type: "blockquote";
-    text: Array<Text | Image | Break | Blockquote | Heading | List>;
+    text: Array<MarkdownNode>;
     indent: number;
 };
 
@@ -109,18 +109,36 @@ type Table = {
 };
 
 function trim(str: string) {
-    const trimmed = string.match(str, "^[ \t]*(.*)[ \t]*$")[0];
-    return t.string(trimmed) ? trimmed : "";
+    const strArray = string.split(str, "");
+    let trimStart = 0;
+    {
+        let trimChar = strArray[0];
+        while (trimChar === " " || trimChar === "\t") {
+            trimStart++;
+            trimChar = strArray[trimStart];
+        }
+    }
+    let trimEnd = strArray.size() - 1;
+    {
+        let trimChar = strArray[trimEnd];
+        while (trimChar === " " || trimChar === "\t") {
+            trimEnd--;
+            trimChar = strArray[trimEnd];
+        }
+    }
+    return string.sub(str, trimStart + 1, trimEnd + 1);
 }
 
 function startsWith(str: string, prefix: string) {
-    return string.match(str, "^" + prefix) !== undefined;
+    return str.sub(1, prefix.size()) === prefix;
 }
 
 function getIndentation(indentStr: string) {
+    const strArray = indentStr.split("");
     let indent = 0;
-    indentStr.split("").forEach((char) => {
-        switch (char) {
+    let indentChar = strArray[0];
+    while (indentChar === " " || indentChar === "\t") {
+        switch (indentChar) {
             case " ":
                 indent++;
                 break;
@@ -128,8 +146,44 @@ function getIndentation(indentStr: string) {
                 indent += 4;
                 break;
         }
-    });
+        indentChar = strArray[indent];
+    }
     return indent;
+}
+
+function getHeaderLevel(headerStr: string) {
+    const strArray = headerStr.split("");
+    let headerLevel = 0;
+    let headerChar = strArray[0];
+    while (headerChar === "#") {
+        headerLevel++;
+        headerChar = strArray[headerLevel];
+    }
+    return headerLevel;
+}
+
+function isOrderedListItem(listItemStr: string) {
+    const strArray = listItemStr.split("");
+    const digits = new Set([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]);
+    let digit = tonumber(strArray[0]);
+    let digitPos = 0;
+    while (digits.has(digit ?? -1)) {
+        digit = tonumber(strArray[digitPos]);
+        digitPos++;
+    }
+    return digit && strArray[digitPos + 1] === ".";
+}
+
+function trimOrderedListItemNumber(listItemStr: string) {
+    const strArray = listItemStr.split("");
+    const digits = new Set([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]);
+    let digit = tonumber(strArray[0]);
+    let digitPos = 0;
+    while (digits.has(digit ?? -1)) {
+        digit = tonumber(strArray[digitPos]);
+        digitPos++;
+    }
+    return listItemStr.sub(digitPos + 2);
 }
 
 function parseText(text: string, bold = false, italic = false, strikethrough = false, code = false, url = "") {
@@ -231,8 +285,8 @@ function parseText(text: string, bold = false, italic = false, strikethrough = f
         // url
         if (i <= urlEnd) url = previousNode?.url ?? "";
         else if (char === "h" && textTable[i + 1] === "t" && textTable[i + 2] === "t" && textTable[i + 3] === "p") {
-            urlEnd = (string.sub(text, i).find("^https?://[^ ]*")[1] ?? 0) - 1;
-            url = string.sub(text, i, urlEnd);
+            urlEnd = (text.sub(i).find("^https?://[^ ]*")[1] ?? 0) - 1;
+            url = text.sub(i, urlEnd);
         }
         if (
             previousNode &&
@@ -249,65 +303,126 @@ function parseText(text: string, bold = false, italic = false, strikethrough = f
     return textNodes;
 }
 
-export function parse(markdown: string) {
-    const lines = string.split(markdown, "\n");
+export function parse(markdown: string): MarkdownNode[] {
+    const lines = markdown.split("\n");
     const nodes = new Array<MarkdownNode>();
-    let currentNode: MarkdownNode | undefined;
     let previousNode: MarkdownNode | undefined;
-    for (const line of lines) {
+    for (let i = 0; i < lines.size(); i++) {
+        const line = lines[i];
+        const indent = getIndentation(line);
         const trimmedLine = trim(line);
-        if (string.match(trimmedLine, "^#+[ \t]*.*$")[0]) {
-            const level = (string.match(trimmedLine, "^#+")[0] as string).size();
-            const text = parseText((string.match(trimmedLine, "^#+[ \t]*(.*)$")[0] as string | undefined) ?? "");
-            currentNode = { type: "heading", level, text };
+        if (trimmedLine.size() === 0) {
+            if (previousNode?.type === "break") previousNode.size++;
+            else nodes.push({ type: "break", size: 1 });
+        } else if (startsWith(trimmedLine, "#")) {
+            const level = getHeaderLevel(trimmedLine);
+            const text = parseText(trimmedLine.sub(level + 1));
+            nodes.push({ type: "header", level, text });
         } else if (startsWith(trimmedLine, "> ")) {
-            if (previousNode?.type === "blockquote") {
-                previousNode.text.push(...parseText(string.sub(trimmedLine, 2)));
-            } else {
-                currentNode = {
-                    type: "blockquote",
-                    text: parseText(string.sub(trimmedLine, 2)),
-                    indent: getIndentation(tostring(string.match(line, "^([ \t])*>")[0] ?? "")),
-                };
+            if (previousNode?.type === "blockquote") previousNode.text = parse(trimmedLine.sub(2));
+            else {
+                const text = parseText(trimmedLine.sub(2));
+                nodes.push({ type: "blockquote", text, indent });
             }
-        } else if (startsWith(trimmedLine, "[%-%*%+] ")) {
-            const indent = getIndentation(tostring(string.match(line, "^([ \t])*[-*]")[0] ?? ""));
-            const text = parseText(string.sub(trimmedLine, 3));
+        } else if (startsWith(trimmedLine, "- ") || startsWith(trimmedLine, "* ") || startsWith(trimmedLine, "+ ")) {
             if (previousNode?.type === "list") {
                 let previousItem: ListItem | undefined;
-                let item = previousNode.items[previousNode.items.size() - 1];
-                while (indent > item.indent) {
+                let item = previousNode.items[previousNode.items.size() - 1] as ListItem | undefined;
+                while (indent > (item?.indent ?? 0)) {
                     previousItem = item;
-                    item = item.children[item.children.size() - 1];
+                    item = previousItem?.children[previousItem.children.size() - 1] as ListItem | undefined;
                 }
-                if (previousItem) previousItem.children.push({ type: "list-item", text, children: [], indent });
-                else previousNode.items.push({ type: "list-item", text: [], children: [], indent });
-            } else
-                currentNode = {
-                    type: "list",
-                    items: [{ type: "list-item", text, children: [], indent }],
-                };
-        } else if (startsWith(trimmedLine, "%d+%. ")) {
-            const indent = getIndentation(tostring(string.match(line, "^([ \t])*%d+%")[0] ?? ""));
-            const text = parseText(string.sub(trimmedLine, 4));
+                (previousItem?.children ?? previousNode.items).push({
+                    type: "list-item",
+                    text: parseText(trimmedLine.sub(2)),
+                    children: [],
+                    indent,
+                });
+            }
+        } else if (isOrderedListItem(trimmedLine)) {
+            const text = parseText(trimOrderedListItemNumber(trimmedLine));
             if (previousNode?.type === "ordered-list") {
                 let previousItem: ListItem | undefined;
-                let item = previousNode.items[previousNode.items.size() - 1];
-                while (indent > item.indent) {
+                let item = previousNode.items[previousNode.items.size() - 1] as ListItem | undefined;
+                while (indent > (item?.indent ?? 0)) {
                     previousItem = item;
-                    item = item.children[item.children.size() - 1];
+                    item = previousItem?.children[previousItem.children.size() - 1] as ListItem | undefined;
                 }
-                if (previousItem) previousItem.children.push({ type: "list-item", text, children: [], indent });
-                else previousNode.items.push({ type: "list-item", text: [], children: [], indent });
-            } else
-                currentNode = {
-                    type: "table",
-                    header: text,
-                    rows: [],
-                };
-        } else if (startsWith(trimmedLine, "```")) {
-            const language = string.match(trimmedLine, "^");
+                (previousItem?.children ?? previousNode.items).push({
+                    type: "list-item",
+                    text,
+                    children: [],
+                    indent,
+                });
+            } else {
+                nodes.push({
+                    type: "ordered-list",
+                    items: [
+                        {
+                            type: "list-item",
+                            text,
+                            children: [],
+                            indent,
+                        },
+                    ],
+                });
+            }
         }
     }
+    // for (const line of lines) {
+    //     const trimmedLine = trim(line);
+    //     if (string.match(trimmedLine, "^#+[ \t]*.*$")[0]) {
+    //         const level = (string.match(trimmedLine, "^#+")[0] as string).size();
+    //         const text = parseText((string.match(trimmedLine, "^#+[ \t]*(.*)$")[0] as string | undefined) ?? "");
+    //         currentNode = { type: "heading", level, text };
+    //     } else if (startsWith(trimmedLine, "> ")) {
+    //         if (previousNode?.type === "blockquote") {
+    //             previousNode.text.push(...parseText(string.sub(trimmedLine, 2)));
+    //         } else {
+    //             currentNode = {
+    //                 type: "blockquote",
+    //                 text: parseText(string.sub(trimmedLine, 2)),
+    //                 indent: getIndentation(tostring(string.match(line, "^([ \t])*>")[0] ?? "")),
+    //             };
+    //         }
+    //     } else if (startsWith(trimmedLine, "[%-%*%+] ")) {
+    //         const indent = getIndentation(tostring(string.match(line, "^([ \t])*[-*]")[0] ?? ""));
+    //         const text = parseText(string.sub(trimmedLine, 3));
+    //         if (previousNode?.type === "list") {
+    //             let previousItem: ListItem | undefined;
+    //             let item = previousNode.items[previousNode.items.size() - 1];
+    //             while (indent > item.indent) {
+    //                 previousItem = item;
+    //                 item = item.children[item.children.size() - 1];
+    //             }
+    //             if (previousItem) previousItem.children.push({ type: "list-item", text, children: [], indent });
+    //             else previousNode.items.push({ type: "list-item", text: [], children: [], indent });
+    //         } else
+    //             currentNode = {
+    //                 type: "list",
+    //                 items: [{ type: "list-item", text, children: [], indent }],
+    //             };
+    //     } else if (startsWith(trimmedLine, "%d+%. ")) {
+    //         const indent = getIndentation(tostring(string.match(line, "^([ \t])*%d+%")[0] ?? ""));
+    //         const text = parseText(string.sub(trimmedLine, 4));
+    //         if (previousNode?.type === "ordered-list") {
+    //             let previousItem: ListItem | undefined;
+    //             let item = previousNode.items[previousNode.items.size() - 1];
+    //             while (indent > item.indent) {
+    //                 previousItem = item;
+    //                 item = item.children[item.children.size() - 1];
+    //             }
+    //             if (previousItem) previousItem.children.push({ type: "list-item", text, children: [], indent });
+    //             else previousNode.items.push({ type: "list-item", text: [], children: [], indent });
+    //         } else
+    //             currentNode = {
+    //                 type: "table",
+    //                 header: text,
+    //                 rows: [],
+    //             };
+    //     } else if (startsWith(trimmedLine, "```")) {
+    //         const language = string.match(trimmedLine, "^");
+    //     }
+    // }
     return nodes;
 }
