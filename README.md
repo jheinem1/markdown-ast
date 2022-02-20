@@ -8,6 +8,8 @@ This is designed to parse Markdown syntax into an AST, or Abstract Syntax Tree. 
 
 I personally plan on using this to create another module that parses this AST into a Roact tree for all types of situations (release TBD).
 
+This implementation **does not** use string patterns or regex, and has no dependencies other than `roblox-ts` and `@rbxts/types`.
+
 ## Implementation
 
 **NOTE:** As this is build completely from scratch, this does **not** have parody with other markdown implementations and may treat whitespace differently. Any text fed to this should probably be specifically written for this implementation otherwise some parsing errors may occur (though this should be compatible with most well-written markdown).
@@ -42,7 +44,5 @@ const markdown = ```
 ```
 
 ### Credits
-
-Using @rbxts/t.
 
 Inspired by the original [markdown-ast](https://github.com/aleclarson/markdown-ast) written in JavaScript.
