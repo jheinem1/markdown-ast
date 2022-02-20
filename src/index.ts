@@ -181,13 +181,17 @@ function parseText(text: string, bold = "", italic = "", strikethrough = "", cod
             currentChar = "";
         } else if (currentChar === "*" && previousChar === "*" && !isEscaped(text.sub(1, i - 2))) {
             roughTextNodes.pop();
+            currentChar = "";
             bold = bold !== "**" ? "**" : "";
         } else if (currentChar === "_" && textTable[i + 1] !== "_" && !isEscaped(text.sub(1, i - 1))) {
+            currentChar = "";
             roughTextNodes.pop();
             italic = italic !== "_" ? "_" : "";
         } else if (currentChar === "*" && textTable[i + 1] !== "*" && !isEscaped(text.sub(1, i - 1))) {
+            currentChar = "";
             italic = italic !== "*" ? "*" : "";
         } else if (currentChar === "`" && !isEscaped(text.sub(1, i))) {
+            currentChar = "";
             code = code !== "`" ? "`" : "";
         } else if (currentChar === "[" && !isEscaped(text.sub(i - 1)) && isValidURL(text.sub(i + 1))) {
             const urlText = getURLText(text.sub(i + 1)) ?? "";
@@ -195,11 +199,15 @@ function parseText(text: string, bold = "", italic = "", strikethrough = "", cod
             const urlNodes = parseText(urlText, bold, italic, strikethrough, code, urlLink);
             i += urlText.size() + urlLink.size() + 4;
             urlNodes.forEach((node) => roughTextNodes.push(node));
+            previousChar = "";
+            continue;
         } else if (currentChar === "!" && !isEscaped(text.sub(i - 1)) && isValidURL(text.sub(i + 2))) {
             const imageAlt = getURLText(text.sub(i + 2)) ?? "";
             const imageURL = getURL(text.sub(i + 2)) ?? "";
             i += imageAlt.size() + imageURL.size() + 5;
             roughTextNodes.push({ type: "image", alt: imageAlt, url: imageURL });
+            previousChar = "";
+            continue;
         }
         if (currentChar)
             roughTextNodes.push({
