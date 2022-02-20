@@ -194,7 +194,7 @@ function parseText(text: string, bold = "", italic = "", strikethrough = "", cod
             const url = getURL(text.sub(i + 1)) ?? "";
             const urlNodes = parseText(urlText, bold, italic, strikethrough, code, url);
             i += urlText.size() + url.size() + 4;
-            textNodes.push(...urlNodes);
+            urlNodes.forEach((node) => textNodes.push(node));
         } else if (currentChar === "!" && !isEscaped(text.sub(i - 1)) && isValidURL(text.sub(i + 2))) {
             const imageAlt = getURLText(text.sub(i + 2)) ?? "";
             const imageURL = getURL(text.sub(i + 2)) ?? "";
