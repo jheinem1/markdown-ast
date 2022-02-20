@@ -124,6 +124,52 @@ function isEscaped(str: string) {
     return escapes % 2 === 1;
 }
 
+function isValidURL(urlStr: string) {
+    const strArray = urlStr.split("");
+    if (strArray[0] === "[" && strArray.size() >= 3) {
+        let currentChar = strArray[1];
+        let i = 1;
+        while (currentChar !== "]" && i < strArray.size()) currentChar = strArray[++i];
+        if (strArray[++i] === "(") {
+            currentChar = strArray[++i];
+            while (currentChar !== ")" && i < strArray.size()) currentChar = strArray[++i];
+            return currentChar === ")";
+        }
+    }
+    return false;
+}
+
+function getURLText(urlStr: string) {
+    const strArray = urlStr.split("");
+    const urlText = new Array<string>();
+    let i = 1;
+    if (strArray[0] === "[" && strArray.size() >= 3) {
+        while (strArray[i] !== "]" && i < strArray.size()) {
+            urlText.push(strArray[i]);
+            i++;
+        }
+        return urlText.join("");
+    }
+}
+
+function getURL(urlStr: string) {
+    const strArray = urlStr.split("");
+    if (strArray[0] === "[" && strArray.size() >= 3) {
+        let currentChar = strArray[1];
+        let i = 1;
+        while (currentChar !== "]" && !isEscaped(urlStr.sub(1, i)) && i < strArray.size()) currentChar = strArray[++i];
+        if (strArray[++i] === "(") {
+            currentChar = strArray[++i];
+            const url = new Array<string>();
+            while (currentChar !== ")" && i < strArray.size()) {
+                currentChar = strArray[++i];
+                url.push(currentChar);
+            }
+            return url.join();
+        }
+    }
+}
+
 function parseText(text: string, bold = "", italic = "", strikethrough = "", code = "", url = "") {
     const textTable = text.split("");
     const textNodes = new Array<Text | Image>();
@@ -133,18 +179,27 @@ function parseText(text: string, bold = "", italic = "", strikethrough = "", cod
         if (currentChar === "\\" && !isEscaped(text.sub(i))) {
             // ignore unescaped backslashes
             currentChar = "";
-        } else if (currentChar === "*" && previousChar === "*" && !isEscaped(text.sub(i - 2))) {
+        } else if (currentChar === "*" && previousChar === "*" && !isEscaped(text.sub(1, i - 2))) {
             textNodes.pop();
             bold = bold !== "**" ? "**" : "";
-        } else if (currentChar === "_" && textTable[i + 1] !== "_" && !isEscaped(text.sub(i - 1))) {
+        } else if (currentChar === "_" && textTable[i + 1] !== "_" && !isEscaped(text.sub(1, i - 1))) {
             textNodes.pop();
             italic = italic !== "_" ? "_" : "";
-        } else if (currentChar === "*" && textTable[i + 1] !== "*" && !isEscaped(text.sub(i - 1))) {
+        } else if (currentChar === "*" && textTable[i + 1] !== "*" && !isEscaped(text.sub(1, i - 1))) {
             italic = italic !== "*" ? "*" : "";
-        } else if (currentChar === "`" && !isEscaped(text.sub(i - 1))) {
+        } else if (currentChar === "`" && !isEscaped(text.sub(1, i))) {
             code = code !== "`" ? "`" : "";
-            // } else if (currentChar === "[" && !isEscaped(text.sub(i - 1))) {
-            //     let text
+        } else if (currentChar === "[" && !isEscaped(text.sub(i - 1)) && isValidURL(text.sub(i + 1))) {
+            const urlText = getURLText(text.sub(i + 1)) ?? "";
+            const url = getURL(text.sub(i + 1)) ?? "";
+            const urlNodes = parseText(urlText, bold, italic, strikethrough, code, url);
+            i += urlText.size() + url.size() + 4;
+            textNodes.push(...urlNodes);
+        } else if (currentChar === "!" && !isEscaped(text.sub(i - 1)) && isValidURL(text.sub(i + 2))) {
+            const imageAlt = getURLText(text.sub(i + 2)) ?? "";
+            const imageURL = getURL(text.sub(i + 2)) ?? "";
+            i += imageAlt.size() + imageURL.size() + 5;
+            textNodes.push({ type: "image", alt: imageAlt, url: imageURL });
         }
         if (currentChar)
             textNodes.push({
@@ -158,116 +213,6 @@ function parseText(text: string, bold = "", italic = "", strikethrough = "", cod
             });
         previousChar = currentChar;
     }
-    // const urlEnd = -1;
-    // for (let i = 0; i < textTable.size(); i++) {
-    //     const char = textTable[i];
-    // switch (char) {
-    //     // bold
-    //     case "*":
-    //         if (previousChar === "*") bold = !bold;
-    //         break;
-    //     // italic
-    //     case "_":
-    //         if (previousChar === "_") italic = !italic;
-    //         break;
-    //     // strikethrough
-    //     case "~":
-    //         if (previousChar === "~") strikethrough = !strikethrough;
-    //         break;
-    //     // code
-    //     case "`":
-    //         code = !code;
-    //         break;
-    //     // url
-    //     case "[":
-    //         const urlTextTable = new Array<string>();
-    //         for (let j = i + 1; j < textTable.size(); j++) {
-    //             const urlChar = textTable[j];
-    //             if (urlChar === "]") {
-    //                 urlEnd = j;
-    //                 break;
-    //             }
-    //             urlTextTable.push(urlChar);
-    //         }
-    //         if (textTable[i + 2 + urlTextTable.size()] === "(") {
-    //             const urlTable = new Array<string>();
-    //             for (let j = i + 1 + urlTextTable.size(); j < textTable.size(); j++) {
-    //                 const urlChar = textTable[j];
-    //                 if (urlChar === ")") {
-    //                     urlEnd = j;
-    //                     break;
-    //                 }
-    //                 urlTable.push(urlChar);
-    //             }
-    //             textNodes.push(
-    //                 ...parseText(
-    //                     urlTextTable.size() ? urlTextTable.join("") : urlTable.join(""),
-    //                     bold,
-    //                     italic,
-    //                     strikethrough,
-    //                     code,
-    //                     url,
-    //                 ),
-    //             );
-    //             i += urlTextTable.size() + urlTable.size() + 4;
-    //             continue;
-    //         }
-    //         break;
-    //     // image
-    //     case "!":
-    //         if (textTable[i + 1] === "[") {
-    //             const imageTextTable = new Array<string>();
-    //             for (let j = i + 2; j < textTable.size(); j++) {
-    //                 const imageChar = textTable[j];
-    //                 if (imageChar === "]") {
-    //                     urlEnd = j;
-    //                     break;
-    //                 }
-    //                 imageTextTable.push(imageChar);
-    //             }
-    //             if (textTable[i + 3 + imageTextTable.size()] === "(") {
-    //                 const imageTable = new Array<string>();
-    //                 for (let j = i + 2 + imageTextTable.size(); j < textTable.size(); j++) {
-    //                     const imageChar = textTable[j];
-    //                     if (imageChar === ")") {
-    //                         urlEnd = j;
-    //                         break;
-    //                     }
-    //                     imageTable.push(imageChar);
-    //                 }
-    //                 textNodes.push({
-    //                     type: "image",
-    //                     url: imageTextTable.size() ? imageTextTable.join("") : imageTable.join(""),
-    //                     alt: imageTextTable.join(""),
-    //                 });
-    //                 i += imageTextTable.size() + imageTable.size() + 4;
-    //                 continue;
-    //             }
-    //         }
-    //         break;
-    // }
-    // let previousNode = textNodes[textNodes.size() - 1] as Text | Image | undefined;
-    // while (previousNode?.type === "image") {
-    //     previousNode = textNodes[textNodes.size() - 2] as Text | Image | undefined;
-    // }
-    // // url
-    // if (i <= urlEnd) url = previousNode?.url ?? "";
-    // else if (char === "h" && textTable[i + 1] === "t" && textTable[i + 2] === "t" && textTable[i + 3] === "p") {
-    //     urlEnd = (text.sub(i).find("^https?://[^ ]*")[1] ?? 0) - 1;
-    //     url = text.sub(i, urlEnd);
-    // }
-    // if (
-    //     previousNode &&
-    //     previousNode.bold === bold &&
-    //     previousNode.italic === italic &&
-    //     previousNode.strikethrough === strikethrough &&
-    //     previousNode.code === code
-    // )
-    //     // this can be optimized- table concatenation is faster
-    //     previousNode.text += char;
-    // else textNodes.push({ type: "text", text: char, bold, italic, strikethrough, code, url });
-    // previousChar = char;
-    // }
     return textNodes;
 }
 
