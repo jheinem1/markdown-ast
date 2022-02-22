@@ -250,12 +250,13 @@ export function parse(markdown: string): MarkdownNode[] {
         let line = lines[i];
         let indent = getIndentation(line);
         let trimmedLine = trim(line);
+        previousNode = nodes[nodes.size() - 1];
         if (trimmedLine.size() === 0) {
             if (previousNode?.type === "break") previousNode.size++;
             else nodes.push({ type: "break", size: 1 });
         } else if (startsWith(trimmedLine, "#")) {
             const level = getHeaderLevel(trimmedLine);
-            const text = parseText(trimmedLine.sub(level + 1));
+            const text = parseText(trimmedLine.sub(level + 2));
             nodes.push({ type: "header", level, text });
         } else if (isHeaderAlt(trimmedLine) && previousNode?.type === "paragraph") {
             const level = trimmedLine.sub(1, 1) === "=" ? 1 : 2;
@@ -263,9 +264,9 @@ export function parse(markdown: string): MarkdownNode[] {
             nodes.pop();
             nodes.push({ type: "header", level, text });
         } else if (startsWith(trimmedLine, "> ")) {
-            if (previousNode?.type === "blockquote") previousNode.text = parse(trimmedLine.sub(2));
+            if (previousNode?.type === "blockquote") previousNode.text = parse(trimmedLine.sub(3));
             else {
-                const text = parseText(trimmedLine.sub(2));
+                const text = parseText(trimmedLine.sub(3));
                 nodes.push({ type: "blockquote", text, indent });
             }
         } else if (startsWith(trimmedLine, "- ") || startsWith(trimmedLine, "* ") || startsWith(trimmedLine, "+ ")) {
@@ -278,7 +279,7 @@ export function parse(markdown: string): MarkdownNode[] {
                 }
                 (previousItem?.children ?? previousNode.items).push({
                     type: "list-item",
-                    text: parseText(trimmedLine.sub(2)),
+                    text: parseText(trimmedLine.sub(3)),
                     children: [],
                     indent,
                 });
@@ -314,7 +315,7 @@ export function parse(markdown: string): MarkdownNode[] {
         } else if (isHorizontalRule(trimmedLine)) {
             nodes.push({ type: "horizontal-rule" });
         } else if (startsWith(trimmedLine, "```")) {
-            const language = trimmedLine.sub(3);
+            const language = trimmedLine.sub(4);
             const code = new Array<CodeLine>();
             while (trimmedLine !== "```") {
                 code.push({ type: "code-line", text: trimmedLine, indent });
@@ -323,6 +324,8 @@ export function parse(markdown: string): MarkdownNode[] {
                 trimmedLine = trim(line);
             }
             nodes.push({ type: "code-block", language, code });
+        } else {
+            nodes.push({ type: "paragraph", text: parseText(trimmedLine) });
         }
     }
     return nodes;
