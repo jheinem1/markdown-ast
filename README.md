@@ -28,7 +28,7 @@ This does **not** support XML right now, and if it does, it will only support Ro
 ## Usage
 
 ```typescript
-const markdown = ```
+const markdown = `
 # Big Heading
 
 - Item 1
@@ -40,8 +40,12 @@ const markdown = ```
 3. Item 3
 
 **bold text**
-\```
+`
+
+parse(markdown); // Markdown AST
 ```
+
+All nodes in the AST have a relatively simple structure (See [types.ts](https://github.com/jheinem1/markdown-ast/blob/98387f13cbf80dc57f3abcabc3fac5c102769b96/src/types.ts) for definitions)
 
 ### Credits
 
