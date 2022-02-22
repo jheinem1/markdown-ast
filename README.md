@@ -16,10 +16,10 @@ This implementation **does not** use string patterns or regex, and has no depend
 
 In terms of supported features, this supports the [base syntax](https://www.markdownguide.org/basic-syntax/), as well as some extra features, including...
 
-- Tables
+- Tables (Not implemented yet)
 - Strikethrough
-- Task Lists
-- Automatic URL Linking
+- Task Lists (Not implemented yet)
+- Automatic URL Linking (Not implemented yet)
 
 ...that are common in other implementations.
 
