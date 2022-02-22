@@ -152,13 +152,14 @@ function getURL(urlStr: string) {
         let i = 1;
         while (currentChar !== "]" && !isEscaped(urlStr.sub(1, i)) && i < strArray.size()) currentChar = strArray[++i];
         if (strArray[++i] === "(") {
-            currentChar = strArray[++i];
+            currentChar = strArray[i++];
             const url = new Array<string>();
             while (currentChar !== ")" && i < strArray.size()) {
-                currentChar = strArray[++i];
+                currentChar = strArray[i++];
                 url.push(currentChar);
             }
-            return url.join();
+            url.pop();
+            return url.join("");
         }
     }
 }
@@ -190,14 +191,14 @@ function parseText(text: string, bold = "", italic = "", strikethrough = "", cod
             const urlText = getURLText(text.sub(i + 1)) ?? "";
             const urlLink = getURL(text.sub(i + 1)) ?? "";
             const urlNodes = parseText(urlText, bold, italic, strikethrough, code, urlLink);
-            i += urlText.size() + urlLink.size() + 4;
+            i += urlText.size() + urlLink.size() + 3;
             urlNodes.forEach((node) => roughTextNodes.push(node));
             previousChar = "";
             continue;
         } else if (currentChar === "!" && !isEscaped(text.sub(i - 1)) && isValidURL(text.sub(i + 2))) {
             const imageAlt = getURLText(text.sub(i + 2)) ?? "";
             const imageURL = getURL(text.sub(i + 2)) ?? "";
-            i += imageAlt.size() + imageURL.size() + 5;
+            i += imageAlt.size() + imageURL.size() + 4;
             roughTextNodes.push({ type: "image", alt: imageAlt, url: imageURL });
             previousChar = "";
             continue;
