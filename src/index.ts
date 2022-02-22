@@ -101,15 +101,8 @@ function isHeaderAlt(altStr: string) {
     const altChars = new Set(["=", "-"]);
     const altChar = strArray[0];
     if (altChars.has(altChar)) {
-        let altCharPos: number;
-        for (altCharPos = 0; altCharPos < strArray.size(); altCharPos++) {
-            const currentChar = strArray[altCharPos];
-            if (currentChar !== altChar) {
-                return false;
-            }
-            return altCharPos >= 2;
-        }
-        return false;
+        for (const char of strArray) if (char !== altChar) return false;
+        return true;
     }
     return false;
 }
