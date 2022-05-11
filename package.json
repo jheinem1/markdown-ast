@@ -1,6 +1,6 @@
 {
   "name": "@rbxts/markdown-ast",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Exposes a simple 'parse' function that generates an AST from Markdown",
   "main": "out/init.lua",
   "scripts": {

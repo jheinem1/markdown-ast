@@ -1,4 +1,130 @@
-import { Text, Image, MarkdownNode, ListItem, CodeLine } from "types";
+import {
+    Text,
+    Image,
+    MarkdownNode,
+    ListItem,
+    CodeLine,
+    Blockquote,
+    Break,
+    CodeBlock,
+    Header,
+    HorizontalRule,
+    List,
+    OrderedList,
+    Paragraph,
+    Table,
+    TaskItem,
+    TaskList,
+    XMLNode,
+} from "types";
+
+export {
+    MarkdownNode,
+    Break,
+    Text,
+    Paragraph,
+    Header,
+    Blockquote,
+    ListItem,
+    List,
+    OrderedList,
+    TaskItem,
+    TaskList,
+    CodeBlock,
+    Image,
+    HorizontalRule,
+    XMLNode,
+    Table,
+};
+
+export function parse(markdown: string): MarkdownNode[] {
+    const lines = markdown.split("\n");
+    const nodes = new Array<MarkdownNode>();
+    let previousNode: MarkdownNode | undefined;
+    for (let i = 0; i < lines.size(); i++) {
+        let line = lines[i];
+        let indent = getIndentation(line);
+        let trimmedLine = trim(line);
+        previousNode = nodes[nodes.size() - 1];
+        if (trimmedLine.size() === 0) {
+            if (previousNode?.type === "break") previousNode.size++;
+            else nodes.push({ type: "break", size: 1 });
+        } else if (startsWith(trimmedLine, "#")) {
+            const level = getHeaderLevel(trimmedLine);
+            const text = parseText(trimmedLine.sub(level + 2));
+            nodes.push({ type: "header", level, text });
+        } else if (isHeaderAlt(trimmedLine) && previousNode?.type === "paragraph") {
+            const level = trimmedLine.sub(1, 1) === "=" ? 1 : 2;
+            const text = previousNode.text;
+            nodes.pop();
+            nodes.push({ type: "header", level, text });
+        } else if (startsWith(trimmedLine, "> ")) {
+            if (previousNode?.type === "blockquote") previousNode.text = parse(trimmedLine.sub(3));
+            else {
+                const text = parseText(trimmedLine.sub(3));
+                nodes.push({ type: "blockquote", text, indent });
+            }
+        } else if (startsWith(trimmedLine, "- ") || startsWith(trimmedLine, "* ") || startsWith(trimmedLine, "+ ")) {
+            if (previousNode?.type === "list") {
+                let previousItem: ListItem | undefined;
+                let item = previousNode.items[previousNode.items.size() - 1] as ListItem | undefined;
+                while (indent > (item?.indent ?? 0)) {
+                    previousItem = item;
+                    item = previousItem?.children[previousItem.children.size() - 1] as ListItem | undefined;
+                }
+                (previousItem?.children ?? previousNode.items).push({
+                    type: "list-item",
+                    text: parseText(trimmedLine.sub(3)),
+                    children: [],
+                    indent,
+                });
+            }
+        } else if (isOrderedListItem(trimmedLine)) {
+            const text = parseText(trimOrderedListItemNumber(trimmedLine));
+            if (previousNode?.type === "ordered-list") {
+                let previousItem: ListItem | undefined;
+                let item = previousNode.items[previousNode.items.size() - 1] as ListItem | undefined;
+                while (indent > (item?.indent ?? 0)) {
+                    previousItem = item;
+                    item = previousItem?.children[previousItem.children.size() - 1] as ListItem | undefined;
+                }
+                (previousItem?.children ?? previousNode.items).push({
+                    type: "list-item",
+                    text,
+                    children: [],
+                    indent,
+                });
+            } else {
+                nodes.push({
+                    type: "ordered-list",
+                    items: [
+                        {
+                            type: "list-item",
+                            text,
+                            children: [],
+                            indent,
+                        },
+                    ],
+                });
+            }
+        } else if (isHorizontalRule(trimmedLine)) {
+            nodes.push({ type: "horizontal-rule" });
+        } else if (startsWith(trimmedLine, "```")) {
+            const language = trimmedLine.sub(4);
+            const code = new Array<CodeLine>();
+            while (trimmedLine !== "```") {
+                code.push({ type: "code-line", text: trimmedLine, indent });
+                line = lines[++i];
+                indent = getIndentation(line);
+                trimmedLine = trim(line);
+            }
+            nodes.push({ type: "code-block", language, code });
+        } else {
+            nodes.push({ type: "paragraph", text: parseText(trimmedLine) });
+        }
+    }
+    return nodes;
+}
 
 function trim(str: string) {
     const strArray = string.split(str, "");
@@ -234,93 +360,4 @@ function parseText(text: string, bold = "", italic = "", strikethrough = "", cod
         return true;
     });
     return textNodes;
-}
-
-export function parse(markdown: string): MarkdownNode[] {
-    const lines = markdown.split("\n");
-    const nodes = new Array<MarkdownNode>();
-    let previousNode: MarkdownNode | undefined;
-    for (let i = 0; i < lines.size(); i++) {
-        let line = lines[i];
-        let indent = getIndentation(line);
-        let trimmedLine = trim(line);
-        previousNode = nodes[nodes.size() - 1];
-        if (trimmedLine.size() === 0) {
-            if (previousNode?.type === "break") previousNode.size++;
-            else nodes.push({ type: "break", size: 1 });
-        } else if (startsWith(trimmedLine, "#")) {
-            const level = getHeaderLevel(trimmedLine);
-            const text = parseText(trimmedLine.sub(level + 2));
-            nodes.push({ type: "header", level, text });
-        } else if (isHeaderAlt(trimmedLine) && previousNode?.type === "paragraph") {
-            const level = trimmedLine.sub(1, 1) === "=" ? 1 : 2;
-            const text = previousNode.text;
-            nodes.pop();
-            nodes.push({ type: "header", level, text });
-        } else if (startsWith(trimmedLine, "> ")) {
-            if (previousNode?.type === "blockquote") previousNode.text = parse(trimmedLine.sub(3));
-            else {
-                const text = parseText(trimmedLine.sub(3));
-                nodes.push({ type: "blockquote", text, indent });
-            }
-        } else if (startsWith(trimmedLine, "- ") || startsWith(trimmedLine, "* ") || startsWith(trimmedLine, "+ ")) {
-            if (previousNode?.type === "list") {
-                let previousItem: ListItem | undefined;
-                let item = previousNode.items[previousNode.items.size() - 1] as ListItem | undefined;
-                while (indent > (item?.indent ?? 0)) {
-                    previousItem = item;
-                    item = previousItem?.children[previousItem.children.size() - 1] as ListItem | undefined;
-                }
-                (previousItem?.children ?? previousNode.items).push({
-                    type: "list-item",
-                    text: parseText(trimmedLine.sub(3)),
-                    children: [],
-                    indent,
-                });
-            }
-        } else if (isOrderedListItem(trimmedLine)) {
-            const text = parseText(trimOrderedListItemNumber(trimmedLine));
-            if (previousNode?.type === "ordered-list") {
-                let previousItem: ListItem | undefined;
-                let item = previousNode.items[previousNode.items.size() - 1] as ListItem | undefined;
-                while (indent > (item?.indent ?? 0)) {
-                    previousItem = item;
-                    item = previousItem?.children[previousItem.children.size() - 1] as ListItem | undefined;
-                }
-                (previousItem?.children ?? previousNode.items).push({
-                    type: "list-item",
-                    text,
-                    children: [],
-                    indent,
-                });
-            } else {
-                nodes.push({
-                    type: "ordered-list",
-                    items: [
-                        {
-                            type: "list-item",
-                            text,
-                            children: [],
-                            indent,
-                        },
-                    ],
-                });
-            }
-        } else if (isHorizontalRule(trimmedLine)) {
-            nodes.push({ type: "horizontal-rule" });
-        } else if (startsWith(trimmedLine, "```")) {
-            const language = trimmedLine.sub(4);
-            const code = new Array<CodeLine>();
-            while (trimmedLine !== "```") {
-                code.push({ type: "code-line", text: trimmedLine, indent });
-                line = lines[++i];
-                indent = getIndentation(line);
-                trimmedLine = trim(line);
-            }
-            nodes.push({ type: "code-block", language, code });
-        } else {
-            nodes.push({ type: "paragraph", text: parseText(trimmedLine) });
-        }
-    }
-    return nodes;
 }
