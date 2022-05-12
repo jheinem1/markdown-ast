@@ -23,11 +23,20 @@ local readme = {
     [3] = {
         ["text"] = {
             [1] = {
+                ["alt"] = "",
+                ["type"] = "image",
+                ["url"] = "https://d33wubrfki0l68.cloudfront.net/f1f475a6fda1c2c4be4cac04033db5c3293032b4/513a4/assets/images/markdown-mark-white.svg",
+                ["width"] = {
+                    ["value"] = 100,
+                    ["unit"] = "px"
+                }
+            },
+            [2] = {
                 ["type"] = "text",
                 ["url"] = "",
                 ["code"] = false,
                 ["bold"] = false,
-                ["text"] = "A simple module that converts Markdown text to a Roact tree.",
+                ["text"] = "k-white.svg){width:100px}",
                 ["strikethrough"] = false,
                 ["italic"] = false
             }
@@ -39,6 +48,24 @@ local readme = {
         ["type"] = "break"
     },
     [5] = {
+        ["text"] = {
+            [1] = {
+                ["type"] = "text",
+                ["url"] = "",
+                ["code"] = false,
+                ["bold"] = false,
+                ["text"] = "A simple module that converts Markdown text to a Roact tree.",
+                ["strikethrough"] = false,
+                ["italic"] = false
+            }
+        },
+        ["type"] = "paragraph"
+    },
+    [6] = {
+        ["size"] = 1,
+        ["type"] = "break"
+    },
+    [7] = {
         ["type"] = "header",
         ["text"] = {
             [1] = {
@@ -53,11 +80,11 @@ local readme = {
         },
         ["level"] = 2
     },
-    [6] = {
+    [8] = {
         ["size"] = 1,
         ["type"] = "break"
     },
-    [7] = {
+    [9] = {
         ["text"] = {
             [1] = {
                 ["type"] = "text",
@@ -71,11 +98,11 @@ local readme = {
         },
         ["type"] = "paragraph"
     },
-    [8] = {
+    [10] = {
         ["size"] = 1,
         ["type"] = "break"
     },
-    [9] = {
+    [11] = {
         ["text"] = {
             [1] = {
                 ["type"] = "text",
@@ -89,11 +116,11 @@ local readme = {
         },
         ["type"] = "paragraph"
     },
-    [10] = {
+    [12] = {
         ["size"] = 1,
         ["type"] = "break"
     },
-    [11] = {
+    [13] = {
         ["text"] = {
             [1] = {
                 ["type"] = "text",
@@ -161,11 +188,11 @@ local readme = {
         },
         ["type"] = "paragraph"
     },
-    [12] = {
+    [14] = {
         ["size"] = 1,
         ["type"] = "break"
     },
-    [13] = {
+    [15] = {
         ["type"] = "header",
         ["text"] = {
             [1] = {
@@ -180,11 +207,11 @@ local readme = {
         },
         ["level"] = 2
     },
-    [14] = {
+    [16] = {
         ["size"] = 1,
         ["type"] = "break"
     },
-    [15] = {
+    [17] = {
         ["text"] = {
             [1] = {
                 ["type"] = "text",
@@ -225,11 +252,11 @@ local readme = {
         },
         ["type"] = "paragraph"
     },
-    [16] = {
+    [18] = {
         ["size"] = 1,
         ["type"] = "break"
     },
-    [17] = {
+    [19] = {
         ["text"] = {
             [1] = {
                 ["type"] = "text",
@@ -261,26 +288,8 @@ local readme = {
         },
         ["type"] = "paragraph"
     },
-    [18] = {
-        ["size"] = 2,
-        ["type"] = "break"
-    },
-    [19] = {
-        ["text"] = {
-            [1] = {
-                ["type"] = "text",
-                ["url"] = "",
-                ["code"] = false,
-                ["bold"] = false,
-                ["text"] = "...that are common in other implementations.",
-                ["strikethrough"] = false,
-                ["italic"] = false
-            }
-        },
-        ["type"] = "paragraph"
-    },
     [20] = {
-        ["size"] = 1,
+        ["size"] = 2,
         ["type"] = "break"
     },
     [21] = {

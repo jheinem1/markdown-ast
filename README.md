@@ -1,5 +1,7 @@
 # @rbxts/markdown-ast
 
+![](https://d33wubrfki0l68.cloudfront.net/f1f475a6fda1c2c4be4cac04033db5c3293032b4/513a4/assets/images/markdown-mark-white.svg)
+
 A simple module that converts Markdown text to a Roact tree.
 
 ## Purpose
@@ -16,12 +18,8 @@ This implementation **does not** use string patterns or regex, and has no depend
 
 In terms of supported features, this supports the [base syntax](https://www.markdownguide.org/basic-syntax/), as well as some extra features, including...
 
-- Tables (Not implemented yet)
-- Strikethrough
-- Task Lists (Not implemented yet)
-- Automatic URL Linking (Not implemented yet)
-
-...that are common in other implementations.
+- [Strikethrough](https://www.markdownguide.org/extended-syntax/strikethrough/)
+- [Image dimensions](https://garrettgman.github.io/rmarkdown/authoring_pandoc_markdown.html#images)
 
 This does **not** support XML right now, and if it does, it will only support Roact elements.
 
