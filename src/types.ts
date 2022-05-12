@@ -91,6 +91,8 @@ export type Image = {
     type: "image";
     url: string;
     alt: string;
+    width?: CSSUnit;
+    height?: CSSUnit;
 };
 
 export type HorizontalRule = {
@@ -110,4 +112,14 @@ export type Table = {
     type: "table";
     header: Array<Text | Image>;
     rows: Array<Text | Image>[];
+};
+
+export enum CSSUnitType {
+    PIXEL = "px",
+    PERCENT = "%",
+}
+
+export type CSSUnit = {
+    unit: CSSUnitType;
+    value: number;
 };

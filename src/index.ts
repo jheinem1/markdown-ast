@@ -16,6 +16,8 @@ import {
     TaskItem,
     TaskList,
     XMLNode,
+    CSSUnit,
+    CSSUnitType,
 } from "types";
 
 export {
@@ -35,6 +37,8 @@ export {
     HorizontalRule,
     XMLNode,
     Table,
+    CSSUnit,
+    CSSUnitType,
 };
 
 export function parse(markdown: string): MarkdownNode[] {
@@ -290,8 +294,52 @@ function getURL(urlStr: string) {
     }
 }
 
+function getImageDimensions(textTable: readonly string[], dimensionStart: number) {
+    let dimensionEnd = dimensionStart;
+    let width: CSSUnit | undefined;
+    let height: CSSUnit | undefined;
+    if (textTable[dimensionStart] === "{") {
+        do {} while (textTable[++dimensionEnd] !== "}" && dimensionEnd < textTable.size());
+        for (let i = dimensionStart + 1; i < dimensionEnd; i++) {
+            switch (textTable[i]) {
+                case "w":
+                    const propName = ["w"];
+                    for (let _ = 0; _ < 4; _++) propName.push(textTable[++i]);
+                    if (propName.join("") === "width") {
+                        const num = new Array<string>();
+                        i++;
+                        while ((textTable[++i].byte()[0] <= 57 && textTable[i].byte()[0] >= 48) || textTable[i] === ".")
+                            num.push(textTable[i]);
+                        const value = tonumber(num.join(""));
+                        if (value)
+                            if (textTable[i] === "p" && textTable[i + 1] === "x")
+                                width = { unit: CSSUnitType.PIXEL, value };
+                            else if (textTable[i] === "%") width = { unit: CSSUnitType.PERCENT, value };
+                    }
+                    break;
+                case "h":
+                    const propName2 = ["h"];
+                    for (let _ = 0; _ < 5; _++) propName2.push(textTable[i]);
+                    if (propName2.join("") === "height") {
+                        const num = new Array<string>();
+                        i++;
+                        while ((textTable[++i].byte()[0] <= 57 && textTable[i].byte()[0] >= 48) || textTable[i] === ".")
+                            num.push(textTable[i]);
+                        const value = tonumber(num.join(""));
+                        if (value)
+                            if (textTable[i] === "p" && textTable[i + 1] === "x")
+                                height = { unit: CSSUnitType.PIXEL, value };
+                            else if (textTable[i] === "%") height = { unit: CSSUnitType.PERCENT, value };
+                    }
+                    break;
+            }
+        }
+    }
+    return { width, height, extraSize: width || height ? dimensionStart - dimensionEnd : 0 };
+}
+
 function parseText(text: string, bold = "", italic = "", strikethrough = "", code = "", url = "") {
-    const textTable = text.split("");
+    const textTable: readonly string[] = text.split("");
     const roughTextNodes = new Array<Text | Image>();
     let previousChar = "";
     for (let i = 0; i < textTable.size(); i++) {
@@ -325,7 +373,9 @@ function parseText(text: string, bold = "", italic = "", strikethrough = "", cod
             const imageAlt = getURLText(text.sub(i + 2)) ?? "";
             const imageURL = getURL(text.sub(i + 2)) ?? "";
             i += imageAlt.size() + imageURL.size() + 4;
-            roughTextNodes.push({ type: "image", alt: imageAlt, url: imageURL });
+            const { width, height, extraSize } = getImageDimensions(textTable, i + 1);
+            i += extraSize;
+            roughTextNodes.push({ type: "image", alt: imageAlt, url: imageURL, width: width, height: height });
             previousChar = "";
             continue;
         }
