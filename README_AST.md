@@ -54,7 +54,7 @@ local readme = {
                 ["url"] = "",
                 ["code"] = false,
                 ["bold"] = false,
-                ["text"] = "A simple module that converts Markdown text to a Roact tree.",
+                ["text"] = "A simple module that converts Markdown text to an AST without patterns or RegEx.",
                 ["strikethrough"] = false,
                 ["italic"] = false
             }
